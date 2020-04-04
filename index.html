@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en" class="h-100">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <title>Corona Cases</title>
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
+</head>
+
+<body>
+    <div class="container-fluid">
+    <h4 class="text-center">Corona Cases By County</h4>
+        <div class="list-group" id="cases">                
+                </div>
+            </div>
+</body>
+<script src="https://code.jquery.com/jquery-3.4.1.min.js">
+</script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js">
+</script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js">
+</script>
+<script>
+    var locations = [17043, 17031, 17089, 17113, 27163];
+
+    function formatAMPM(date) {
+        var hours = date.getHours();
+        var minutes = date.getMinutes();
+        var ampm = hours >= 12 ? 'pm' : 'am';
+        hours = hours % 12;
+        hours = hours ? hours : 12; // the hour '0' should be '12'
+        minutes = minutes < 10 ? '0'+minutes : minutes;
+        var strTime = hours + ':' + minutes + ' ' + ampm;
+        return strTime;
+    }
+
+    for (loc in locations){
+        var request = new Request(`https://services1.arcgis.com/0MSEUqKaxRlEPj5g/ArcGIS/rest/services/ncov_cases2_v1/FeatureServer/1/query?where=FIPS+%3D+${locations[loc]}&outFields=Confirmed%2CDeaths%2CRecovered%2CCombined_Key%2CLast_Update&returnGeometry=false&f=pjson`, {method: 'GET'});
+        fetch(request)
+        .then(response => {
+            if (response.status === 200) {
+                return response.json();
+            } else {
+                throw new Error('Something went wrong on api server!');
+            }
+        })
+        .then(response => {
+            var feature = response.features[0].attributes;
+            var time = new Date(feature['Last_Update']);
+            var timestamp = `${time.toLocaleDateString()} ${time.toLocaleTimeString()}`
+            $(`#cases`).append(`
+                <a href="#" class="list-group-item list-group-item-action flex-column align-items-start">
+                  <div class="d-flex w-100 justify-content-between">
+                    <h5 class="mb-1">${feature['Combined_Key']}</h5>
+                    <small class="text-muted">${timestamp}</small>
+                  </div>
+                  <small class="mb-1">Confirmed: ${feature['Confirmed'].toLocaleString()}</small><br>
+                  <small class="mb-1">Deaths: ${feature['Deaths'].toLocaleString()}</small><br>
+                  <small class="mb-1">Recoveries: ${feature['Recovered'].toLocaleString()}</small><br>
+                </a>
+            `)
+        }).catch(error => {
+            alert(error);
+        });
+    }
+</script>
+
+</html>
